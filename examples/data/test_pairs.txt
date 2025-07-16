@@ -1,0 +1,81 @@
+# Test word pairs - mix of related and unrelated
+# Format: word1,word2,description
+cat,dog,related animals
+cat,animal,cat is animal
+table,chair,furniture
+bird,fly,bird action
+fish,swim,fish action
+kitchen,house,room in house
+bed,sleep,bed for sleeping
+farm,cow,farm animal
+cat,table,unrelated
+bird,kitchen,unrelated
+mouse,rat,both small rodents
+lion,tiger,both big cats
+elephant,whale,both very large
+monkey,animal,monkey is animal
+penguin,swim,penguin action
+eagle,fly,eagle action
+butterfly,fly,butterfly action
+shark,ocean,shark habitat
+dolphin,fish,dolphin is fish
+horse,fast,horse characteristic
+turtle,slow,turtle characteristic
+snake,animal,snake is animal
+red,color,red is color
+blue,color,blue is color
+green,color,green is color
+yellow,sun,sun is yellow
+happy,sad,opposite emotions
+hot,cold,opposite temperatures
+big,small,opposite sizes
+fast,slow,opposite speeds
+clean,dirty,opposite conditions
+new,old,opposite ages
+morning,evening,opposite times
+sun,moon,day vs night
+rain,snow,both weather
+car,truck,both vehicles
+train,plane,both transportation
+bread,food,bread is food
+apple,fruit,apple is fruit
+carrot,vegetable,carrot is vegetable
+shirt,clothing,shirt is clothing
+home,house,similar meanings
+work,office,work location
+study,school,study location
+cook,kitchen,cooking location
+sleep,bedroom,sleeping location
+read,library,reading location
+hospital,office,both buildings
+school,office,both buildings
+swim,water,swimming requires water
+drive,car,driving requires car
+write,read,both actions
+see,look,both visual
+hear,listen,both auditory
+think,know,both mental
+love,like,both emotions
+time,clock,time measurement
+weather,rain,weather element
+storm,wind,storm component
+forest,park,both nature places
+garden,park,both outdoor places
+beach,ocean,beach near ocean
+mountain,river,both natural features
+river,water,river contains water
+city,town,both populated places
+village,town,village is small town
+island,ocean,island in ocean
+bridge,road,bridge for crossing
+street,road,both for travel
+food,hungry,food satisfies hunger
+water,thirsty,water satisfies thirst
+tired,sleep,tired needs sleep
+cold,jacket,cold requires jacket
+rain,coat,rain protection
+dark,light,opposite conditions
+mouse,elephant,very different animals
+ocean,cookie,completely unrelated
+mountain,socks,unrelated items
+bread,tiger,unrelated objects 

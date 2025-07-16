@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Example 1: Train a small encoder with embedded vocabulary and text.
+"""Example 1: Train a small encoder with external vocabulary and text files.
 
-This example demonstrates basic encoder usage with small, embedded data.
-Perfect for understanding the core concepts without external files.
+This example demonstrates basic encoder usage with small data files.
+Perfect for understanding the core concepts with clean, streamlined code.
 """
 
 import sys
-import numpy as np
-import tempfile
 from pathlib import Path
 
 # Add the source directory to Python path so we can import dy_sdr_encoder
@@ -15,213 +13,102 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from dy_sdr_encoder import Encoder, train
+from training_utils import (
+    load_vocab_file, load_test_pairs, get_corpus_info,
+    test_overlaps, show_progress_summary, show_epoch_progress,
+    print_encoder_info, print_data_info, save_encoder_with_info
+)
 
 
 def main():
-    print("=== DY SDR Encoder - Example 1: Embedded Training ===\n")
+    print("=== DY SDR Encoder - Example 1: Expanded Vocabulary Training ===\n")
     
-    # Embedded vocabulary - expanded set of related words (4x larger)
-    vocab = [
-        # Animals
-        "cat", "dog", "bird", "fish", "horse", "cow", "pig", "sheep", "chicken", "duck",
-        "animal", "pet", "farm", "wild", "zoo",
-        # Home/Building
-        "house", "room", "kitchen", "bedroom", "bathroom", "living", "door", "window", "wall", "roof",
-        # Furniture 
-        "table", "chair", "bed", "sofa", "desk", "lamp", "shelf",
-        # Actions
-        "sit", "sleep", "eat", "drink", "walk", "run", "fly", "swim"
-    ]
+    # File paths
+    data_dir = Path(__file__).parent / "data"
+    vocab_path = data_dir / "vocab.txt"
+    corpus_path = data_dir / "corpus.txt"
+    test_pairs_path = data_dir / "test_pairs.txt"
     
-    # Embedded corpus - expanded sentences demonstrating word relationships (4x larger)
-    corpus_text = """cat sleep house
-dog sleep house
-cat animal
-dog animal
-animal sleep
-house room
-room table
-room chair
-sit chair
-sit table
-bird fly wild
-bird animal
-fish swim wild
-fish animal
-horse run farm
-horse animal
-cow farm animal
-pig farm animal
-sheep farm animal
-chicken farm animal
-duck farm animal
-pet animal house
-zoo animal wild
-kitchen house room
-bedroom house room
-bathroom house room
-living house room
-door house
-window house
-wall house
-roof house
-table kitchen
-chair kitchen
-bed bedroom
-sofa living
-desk bedroom
-lamp bedroom
-shelf living
-sit chair
-sit sofa
-sleep bed
-eat kitchen
-drink kitchen
-walk house
-run wild
-fly bird
-swim fish
-cat pet
-dog pet
-bird pet
-fish pet"""
+    # Check if files exist
+    for file_path in [vocab_path, corpus_path, test_pairs_path]:
+        if not file_path.exists():
+            print(f"Error: Required file not found: {file_path}")
+            print("Please ensure all data files exist before running this example.")
+            return
     
-    print("Vocabulary:")
-    print(f"  {vocab}")
-    print(f"  Size: {len(vocab)} words")
-    print()
+    # Load data from files
+    print("Loading data from files...")
+    vocab = load_vocab_file(str(vocab_path))
+    test_pairs = load_test_pairs(str(test_pairs_path))
+    corpus_info = get_corpus_info(str(corpus_path))
     
-    print("Corpus:")
-    for line in corpus_text.strip().split('\n'):
-        print(f"  {line}")
-    print()
+    # Display data information
+    print_data_info(vocab, corpus_info)
     
-    # Create encoder with appropriately sized grid for expanded vocabulary
+    # Create encoder with appropriately sized grid for vocabulary
     print("Creating encoder...")
     encoder = Encoder(
-        grid=(48, 48),    # Larger grid to accommodate 4x more words
-        sparsity=0.02,    # 2% sparsity (about 46 active bits)
+        grid=(80, 80),    # Larger grid to accommodate 5x more words (200 vs 40)
+        sparsity=0.02,    # 2% sparsity (about 128 active bits)
         rng=42            # Fixed seed for reproducibility
     )
     
     # Initialize vocabulary
     encoder.init_vocab(vocab)
-    print(f"Encoder initialized with {encoder.vocab_size} words")
-    print(f"Grid size: {encoder.height}x{encoder.width} = {encoder.total_bits} bits")
-    print(f"Active bits per word: {encoder.active_bits}")
-    print()
-    
-    # Helper function to show overlaps between word pairs
-    def show_overlap(word1, word2):
-        overlap = np.count_nonzero(encoder.flat(word1) & encoder.flat(word2))
-        total_possible = encoder.active_bits
-        percentage = (overlap / total_possible) * 100
-        print(f"  {word1} ↔ {word2}: {overlap}/{total_possible} bits ({percentage:.1f}%)")
-        return overlap
-    
-    # Helper function to test all word pairs and return results
-    def test_overlaps(title):
-        print(f"{title}:")
-        overlaps = {}
-        for word1, word2 in test_pairs:
-            overlaps[(word1, word2)] = show_overlap(word1, word2)
-        print()
-        return overlaps
-    
-    # Test word pairs - mix of related and unrelated
-    test_pairs = [
-        ("cat", "dog"),           # related animals
-        ("cat", "animal"),        # cat is animal
-        ("table", "chair"),       # furniture
-        ("bird", "fly"),          # bird action
-        ("fish", "swim"),         # fish action
-        ("kitchen", "house"),     # room in house
-        ("bed", "sleep"),         # bed for sleeping
-        ("farm", "cow"),          # farm animal
-        ("cat", "table"),         # unrelated
-        ("bird", "kitchen")       # unrelated
-    ]
+    print_encoder_info(encoder)
     
     # Test initial overlaps
     epoch_overlaps = []
-    initial_overlaps = test_overlaps("Initial overlaps (before training)")
+    initial_overlaps = test_overlaps(encoder, test_pairs, "Initial overlaps (before training)")
     epoch_overlaps.append(("Initial", initial_overlaps))
     
-    # Write corpus to temporary file for training
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-        f.write(corpus_text)
-        corpus_path = f.name
+    # Train the encoder epoch by epoch to monitor progress
+    print("Training encoder...")
+    print(f"Corpus: {corpus_info['total_tokens']} total tokens")
+    print("Note: Monitoring overlap changes after each epoch...\n")
     
-    try:
-        # Train the encoder epoch by epoch to monitor progress
-        print("Training encoder...")
-        print(f"Corpus: {len(corpus_text.strip().split())} total tokens")
-        print("Note: Monitoring overlap changes after each epoch...\n")
+    epochs = 30
+    for epoch in range(epochs):
+        print(f"=== Epoch {epoch + 1}/{epochs} ===")
+        print("Training on corpus...")
         
-        epochs = 10
-        for epoch in range(epochs):
-            print(f"=== Epoch {epoch + 1}/{epochs} ===")
-            print("Training on corpus...")
-            
-            # Train for one epoch (quietly)
-            train(
-                encoder=encoder,
-                corpus_path=corpus_path,
-                window_size=2,      # ±2 word context window
-                epochs=1,           # Train one epoch at a time
-                swap_per_epoch=2,   # Conservative bit swapping
-                neighbourhood_d=3,  # Allow wider neighborhood search
-                verbose=False       # Quiet training
-            )
-            
-            # Test overlaps after this epoch
-            current_overlaps = test_overlaps(f"After epoch {epoch + 1}")
-            epoch_overlaps.append((f"Epoch {epoch + 1}", current_overlaps))
-            
-            # Show progress compared to initial (compact format)
-            print("Progress since start:")
-            for word1, word2 in test_pairs:
-                initial = initial_overlaps.get((word1, word2), 0)
-                current = current_overlaps.get((word1, word2), 0)
-                change = current - initial
-                print(f"  {word1} ↔ {word2}: {initial} → {current} ({change:+d})")
-            print()
+        # Train for one epoch (quietly)
+        train(
+            encoder=encoder,
+            corpus_path=corpus_path,
+            window_size=2,      # ±2 word context window
+            epochs=1,           # Train one epoch at a time
+            swap_per_epoch=4,   # Conservative bit swapping
+            neighbourhood_d=3,  # Allow wider neighborhood search
+            verbose=False       # Quiet training
+        )
         
-        # Show final summary of all epochs
-        print("=== Training Complete - Full Progress Summary ===")
-        print("Overlap progression:")
-        for word1, word2 in test_pairs:
-            print(f"\n{word1} ↔ {word2}:")
-            for epoch_name, overlaps in epoch_overlaps:
-                overlap_val = overlaps.get((word1, word2), 0)
-                percentage = (overlap_val / encoder.active_bits) * 100
-                print(f"  {epoch_name}: {overlap_val}/{encoder.active_bits} bits ({percentage:.1f}%)")
-        print()
+        # Test overlaps after this epoch
+        current_overlaps = test_overlaps(encoder, test_pairs, f"After epoch {epoch + 1}")
+        epoch_overlaps.append((f"Epoch {epoch + 1}", current_overlaps))
         
-        # Save the trained encoder
-        models_dir = Path("models")
-        models_dir.mkdir(exist_ok=True)
-        encoder_path = models_dir / "embedded_trained_encoder.npz"
-        encoder.save(encoder_path)
-        print(f"Encoder saved to: {encoder_path}")
-        
-        # Demonstrate loading
-        print("\nTesting save/load...")
-        loaded_encoder = Encoder.load(encoder_path)
-        print(f"Successfully loaded encoder with {loaded_encoder.vocab_size} words")
-        
-        # Verify loaded encoder works
-        final_cat_dog = epoch_overlaps[-1][1].get(("cat", "dog"), 0)
-        test_overlap = np.count_nonzero(loaded_encoder.flat("cat") & loaded_encoder.flat("dog"))
-        print(f"Loaded encoder cat↔dog overlap: {test_overlap} (matches: {test_overlap == final_cat_dog})")
-        
-    finally:
-        # Clean up temporary file
-        Path(corpus_path).unlink()
+        # Show progress compared to initial (compact format)
+        show_epoch_progress(test_pairs, initial_overlaps, current_overlaps)
     
-    print("\n=== Example 1 Complete ===")
-    print("The encoder has learned to associate semantically related words!")
-    print("Related words now share more bits in their sparse representations.")
+    # Show final summary of all epochs
+    show_progress_summary(test_pairs, epoch_overlaps, encoder)
+    
+    # Save the trained encoder
+    encoder_path = Path("models") / "embedded_trained_encoder.npz"
+    save_encoder_with_info(encoder, encoder_path, "Example 1")
+    
+    # Demonstrate loading
+    print("\nTesting save/load...")
+    loaded_encoder = Encoder.load(encoder_path)
+    print(f"Successfully loaded encoder with {loaded_encoder.vocab_size} words")
+    
+    # Verify loaded encoder works
+    if test_pairs:
+        word1, word2 = test_pairs[0]
+        final_overlap = epoch_overlaps[-1][1].get((word1, word2), 0)
+        from training_utils import calculate_overlap
+        test_overlap, _ = calculate_overlap(loaded_encoder, word1, word2)
+        print(f"Loaded encoder {word1}↔{word2} overlap: {test_overlap} (matches: {test_overlap == final_overlap})")
 
 
 if __name__ == "__main__":
