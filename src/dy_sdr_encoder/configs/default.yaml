@@ -1,0 +1,19 @@
+# path to plain-text corpus (one sentence per line)
+corpus_path: ../data/corpus.txt
+# path to newline-separated vocabulary file
+vocab_path: ../data/vocab.txt
+
+# SDR grid dimensions (H × W = n bits)  «keep n fixed»
+grid:
+  H: 128
+  W: 128
+
+# % of '1' bits per SDR
+sparsity: 0.02        # → w = 2 % of n
+
+# training hyper-params
+window_size: 5        # ± tokens
+epochs: 3
+swap_per_epoch: 3     # bits swapped per word each epoch
+neighbourhood_d: 2    # Manhattan radius when picking replacement bits
+seed: 42 
