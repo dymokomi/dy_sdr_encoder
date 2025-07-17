@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Example 1: Train a small encoder with external vocabulary and text files.
+"""Example 1: Train an encoder with external vocabulary and text files.
 
-This example demonstrates basic encoder usage with small data files.
+This example demonstrates basic encoder usage with rich semantic data.
 Perfect for understanding the core concepts with clean, streamlined code.
 """
 
@@ -13,9 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from dy_sdr_encoder import Encoder, train
+from dy_sdr_encoder import load_vocab_file, load_test_pairs, get_corpus_info, test_overlaps
 from training_utils import (
-    load_vocab_file, load_test_pairs, get_corpus_info,
-    test_overlaps, show_progress_summary, show_epoch_progress,
+    show_progress_summary, show_epoch_progress,
     print_encoder_info, print_data_info, save_encoder_with_info
 )
 
@@ -48,7 +48,7 @@ def main():
     # Create encoder with appropriately sized grid for vocabulary
     print("Creating encoder...")
     encoder = Encoder(
-        grid=(80, 80),    # Larger grid to accommodate 5x more words (200 vs 40)
+        grid=(64, 64),    # Larger grid to accommodate 5x more words (200 vs 40)
         sparsity=0.02,    # 2% sparsity (about 128 active bits)
         rng=42            # Fixed seed for reproducibility
     )
@@ -67,7 +67,7 @@ def main():
     print(f"Corpus: {corpus_info['total_tokens']} total tokens")
     print("Note: Monitoring overlap changes after each epoch...\n")
     
-    epochs = 30
+    epochs = 90
     for epoch in range(epochs):
         print(f"=== Epoch {epoch + 1}/{epochs} ===")
         print("Training on corpus...")

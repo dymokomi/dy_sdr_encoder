@@ -13,9 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from dy_sdr_encoder import Encoder, train
+from dy_sdr_encoder import load_vocab_file, load_test_pairs, get_corpus_info, test_overlaps
 from training_utils import (
-    load_vocab_file, load_test_pairs, get_corpus_info,
-    test_overlaps, show_progress_summary, show_epoch_progress,
+    show_progress_summary, show_epoch_progress,
     print_encoder_info, print_data_info, save_encoder_with_info
 )
 
@@ -24,9 +24,9 @@ def main():
     print("=== DY SDR Encoder - Example 2: Large File-based Training ===\n")
     
     # File paths
-    vocab_path = Path("data/train.vocab")
+    vocab_path = Path("data/vocab.txt")
     corpus_path = Path("data/train.txt")
-    test_pairs_path = Path("examples/data/test_pairs_large.txt")
+    test_pairs_path = Path("examples/data/test_pairs.txt")
     
     # Check if files exist
     for file_path in [vocab_path, corpus_path, test_pairs_path]:

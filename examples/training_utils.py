@@ -1,88 +1,20 @@
 #!/usr/bin/env python3
 """Training utilities for DY SDR Encoder examples.
 
-This module provides common functionality for loading data files,
-testing word overlaps, and logging training progress.
+This module provides example-specific functionality for display and progress tracking.
+Core dataset and testing functions have been moved to dy_sdr_encoder.dataset and dy_sdr_encoder.testing.
 """
 
-import numpy as np
+import sys
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 
+# Add the source directory to Python path for examples
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-def load_vocab_file(vocab_path: str) -> List[str]:
-    """Load vocabulary from a text file (one word per line)."""
-    with open(vocab_path, 'r', encoding='utf-8') as f:
-        vocab = [line.strip() for line in f if line.strip()]
-    return vocab
-
-
-def load_test_pairs(test_pairs_path: str) -> List[Tuple[str, str]]:
-    """Load test word pairs from a CSV-like file.
-    
-    Format: word1,word2,description
-    Lines starting with # are treated as comments.
-    """
-    pairs = []
-    with open(test_pairs_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                parts = line.split(',')
-                if len(parts) >= 2:
-                    pairs.append((parts[0], parts[1]))
-    return pairs
-
-
-def get_corpus_info(corpus_path: str) -> Dict[str, Any]:
-    """Get basic information about a corpus file."""
-    with open(corpus_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    total_tokens = sum(len(line.split()) for line in lines)
-    
-    return {
-        'total_lines': len(lines),
-        'total_tokens': total_tokens,
-        'sample_lines': [line.strip() for line in lines[:5]]
-    }
-
-
-def calculate_overlap(encoder, word1: str, word2: str) -> Tuple[int, float]:
-    """Calculate overlap between two words in the encoder.
-    
-    Returns:
-        tuple: (overlap_count, overlap_percentage)
-    """
-    if word1 not in encoder or word2 not in encoder:
-        return 0, 0.0
-    
-    overlap = np.count_nonzero(encoder.flat(word1) & encoder.flat(word2))
-    percentage = (overlap / encoder.active_bits) * 100
-    return overlap, percentage
-
-
-def show_overlap(encoder, word1: str, word2: str, prefix: str = "  ") -> int:
-    """Display overlap between two words and return overlap count."""
-    overlap, percentage = calculate_overlap(encoder, word1, word2)
-    
-    if word1 not in encoder or word2 not in encoder:
-        missing = [w for w in [word1, word2] if w not in encoder]
-        print(f"{prefix}{word1} ↔ {word2}: word(s) not in vocabulary: {missing}")
-        return 0
-    
-    print(f"{prefix}{word1} ↔ {word2}: {overlap}/{encoder.active_bits} bits ({percentage:.1f}%)")
-    return overlap
-
-
-def test_overlaps(encoder, test_pairs: List[Tuple[str, str]], title: str) -> Dict[Tuple[str, str], int]:
-    """Test overlaps for all word pairs and return results."""
-    print(f"{title}:")
-    overlaps = {}
-    for word1, word2 in test_pairs:
-        overlaps[(word1, word2)] = show_overlap(encoder, word1, word2)
-    print()
-    return overlaps
+# Import from the main package
+from dy_sdr_encoder.dataset import load_vocab_file, load_test_pairs, get_corpus_info
+from dy_sdr_encoder.testing import calculate_overlap, show_overlap, test_overlaps
 
 
 def show_progress_summary(test_pairs: List[Tuple[str, str]], epoch_overlaps: List[Tuple[str, Dict]], encoder):
